@@ -6,7 +6,7 @@
 
 > A premium BetterDiscord plugin & theme bringing breathtaking aesthetics, dynamic visuals, and intelligent color adaptation to your client.
 
-Transform your Discord client with a stunning, true-glassmorphism aesthetic. **[Your Plugin Name]** doesn't just change your theme; it breathes life into your client by continuously fetching gorgeous 4K backgrounds and dynamically adapting your UI to match.
+Transform your Discord client with a stunning, true-glassmorphism aesthetic. **GlassyWalls** doesn't just change your theme; it breathes life into your client by continuously fetching gorgeous 4K backgrounds and dynamically adapting your UI to match.
 
 ---
 
@@ -30,7 +30,7 @@ Transform your Discord client with a stunning, true-glassmorphism aesthetic. **[
 ## 🚀 Installation
 
 1. Download BetterDiscord if you haven't already.
-2. Download the latest `[YourPluginName].theme.css` and `[YourPluginName].plugin.js` from the [Releases](../../releases) page.
+2. Download the latest `.theme.css` and `[YourPluginName].plugin.js` from the [Releases](../../releases) page.
 3. Open your BetterDiscord settings in Discord.
 4. Go to **Plugins** -> **Open Plugin Folder** and drop the `.js` file in.
 5. Go to **Themes** -> **Open Theme Folder** and drop the `.css` file in.
