@@ -1,0 +1,435 @@
+/**
+ * @name GlassyVision
+ * @author xashu/Dev
+ * @version 2.0.0
+ * @description Premium glassmorphism companion theme for GlassyWalls. Extends ClearVision V7 with dynamic wallpaper-driven colors, deep blur, and premium glass surfaces everywhere.
+ * @source https://github.com/BrokenDecoder/GlassyWalls
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   IMPORT: ClearVision V7 base (layout + structure only)
+   ═══════════════════════════════════════════════════════════════ */
+@import url("https://clearvision.github.io/ClearVision-v7/main.css");
+@import url("https://clearvision.github.io/ClearVision-v7/betterdiscord.css");
+
+/* ═══════════════════════════════════════════════════════════════
+   CORE: Wire ClearVision variables → GlassyWalls dynamic system
+   All accent, background, and shading values are now driven
+   entirely by the GlassyWalls plugin's live wallpaper analysis.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Accent Colors (driven by wallpaper) ── */
+  --main-color: rgb(var(--glassy-accent, 198, 120, 245));
+  --hover-color: rgba(var(--glassy-accent, 198, 120, 245), 0.75);
+  --success-color: #43b581;
+  --danger-color: #e04040;
+
+  /* ── Status Colors ── */
+  --online-color: #43b581;
+  --idle-color: #faa61a;
+  --dnd-color: #e04040;
+  --streaming-color: #9b59b6;
+  --offline-color: #747f8d;
+
+  /* ── Backgrounds: DISABLED — GlassyWalls handles everything ── */
+  --background-shading-percent: 0%;
+  --background-image: none;
+  --background-position: center;
+  --background-size: cover;
+  --background-attachment: fixed;
+  --background-filter: none;
+
+  /* ── Popout / Modal backgrounds: DISABLED ── */
+  --user-popout-image: none;
+  --user-popout-position: center;
+  --user-popout-size: cover;
+  --user-popout-attachment: fixed;
+  --user-popout-filter: none;
+  --user-modal-image: none;
+  --user-modal-position: center;
+  --user-modal-size: cover;
+  --user-modal-attachment: fixed;
+  --user-modal-filter: none;
+
+  /* ── Home Icon ── */
+  --home-icon: url(https://clearvision.github.io/icons/discord.svg);
+  --home-size: cover;
+
+  /* ── Typography (premium) ── */
+  --main-font: "gg sans", "Inter", "Segoe UI", sans-serif;
+  --code-font: "JetBrains Mono", Consolas, "gg mono", monospace;
+
+  /* ── Channel Colors (accent-linked) ── */
+  --channel-normal: rgba(255, 255, 255, 0.7);
+  --channel-muted: rgba(255, 255, 255, 0.3);
+  --channel-hover: rgba(255, 255, 255, 0.95);
+  --channel-selected: #fff;
+  --channel-selected-bg: rgba(var(--glassy-accent, 198, 120, 245), 0.2);
+  --channel-unread: rgb(var(--glassy-accent, 198, 120, 245));
+  --channel-unread-hover: rgba(var(--glassy-accent, 198, 120, 245), 0.85);
+
+  /* ── Accessibility ── */
+  --focus-color: rgba(var(--glassy-accent, 198, 120, 245), 0.6);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME SHADING OVERRIDES
+   All Discord themes use GlassyWalls dynamic variables
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ASH / Dark (default Discord) */
+:is(.theme-dark, .theme-light .theme-dark) {
+  --background-shading: rgba(var(--glassy-bg-rgb, 15, 15, 20), var(--glassy-opacity, 0.45));
+  --card-shading: rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.08));
+  --popout-shading: rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.2));
+  --modal-shading: rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.15));
+  --input-shading: rgba(0, 0, 0, 0.35);
+  --normal-text: #e0e0e4;
+  --muted-text: #a0a0a8;
+}
+
+/* Light Theme */
+:is(.theme-light, .theme-dark .theme-light) {
+  --background-shading: rgba(var(--glassy-bg-rgb, 240, 240, 245), calc(var(--glassy-opacity, 0.45) - 0.1));
+  --card-shading: rgba(var(--glassy-bg-rgb, 240, 240, 245), var(--glassy-opacity, 0.45));
+  --popout-shading: rgba(var(--glassy-bg-rgb, 240, 240, 245), calc(var(--glassy-opacity, 0.45) + 0.15));
+  --modal-shading: rgba(var(--glassy-bg-rgb, 240, 240, 245), calc(var(--glassy-opacity, 0.45) + 0.1));
+  --input-shading: rgba(0, 0, 0, 0.15);
+  --normal-text: #2e2e34;
+  --muted-text: #6e6e76;
+}
+
+/* Darker Theme */
+:is(.theme-darker, .theme-light .theme-darker) {
+  --background-shading: rgba(var(--glassy-bg-rgb, 8, 8, 12), calc(var(--glassy-opacity, 0.45) + 0.1));
+  --card-shading: rgba(var(--glassy-bg-rgb, 8, 8, 12), calc(var(--glassy-opacity, 0.45) + 0.15));
+  --popout-shading: rgba(var(--glassy-bg-rgb, 8, 8, 12), calc(var(--glassy-opacity, 0.45) + 0.25));
+  --modal-shading: rgba(var(--glassy-bg-rgb, 8, 8, 12), calc(var(--glassy-opacity, 0.45) + 0.2));
+  --input-shading: rgba(255, 255, 255, 0.04);
+  --normal-text: #f4f4f6;
+  --muted-text: #8a8a92;
+}
+
+/* Midnight / Onyx Theme */
+:is(.theme-midnight, .theme-light .theme-midnight) {
+  --background-shading: rgba(var(--glassy-bg-rgb, 2, 2, 6), calc(var(--glassy-opacity, 0.45) + 0.2));
+  --card-shading: rgba(var(--glassy-bg-rgb, 2, 2, 6), calc(var(--glassy-opacity, 0.45) + 0.2));
+  --popout-shading: rgba(var(--glassy-bg-rgb, 2, 2, 6), calc(var(--glassy-opacity, 0.45) + 0.3));
+  --modal-shading: rgba(var(--glassy-bg-rgb, 2, 2, 6), calc(var(--glassy-opacity, 0.45) + 0.25));
+  --input-shading: rgba(255, 255, 255, 0.03);
+  --normal-text: #dcdcde;
+  --muted-text: #76767e;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM GLASSMORPHISM SURFACES
+   Every overlay, popout, modal, and dropdown gets deep glass.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Context Menus ── */
+[class*="menu_"] {
+  background: linear-gradient(
+    145deg,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.25)) 0%,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.15)) 100%
+  ) !important;
+  backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 5px)) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 5px)) saturate(1.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02) !important;
+}
+
+[class*="menu_"] [class*="item_"]:hover {
+  background: rgba(var(--glassy-accent, 198, 120, 245), 0.12) !important;
+  border-radius: 6px !important;
+}
+
+/* ── User Popouts ── */
+[class*="userPopout_"],
+[class*="userPopoutOuter_"],
+[class*="popout_"][class*="root_"] {
+  background: linear-gradient(
+    160deg,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.2)) 0%,
+    rgba(var(--glassy-bg-panels-rgb, 20, 20, 25), calc(var(--glassy-opacity, 0.45) + 0.15)) 100%
+  ) !important;
+  backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 8px)) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 8px)) saturate(1.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  overflow: hidden;
+}
+
+/* ── Modals (Settings, User Settings, etc.) ── */
+[class*="modal_"][class*="root_"],
+[class*="modalContent_"],
+[class*="layer_"] [class*="standardSidebarView_"],
+[class*="layer_"] [class*="contentRegion_"],
+[class*="layer_"] [class*="sidebarRegion_"] {
+  background: linear-gradient(
+    140deg,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.2)) 0%,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.1)) 100%
+  ) !important;
+  backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 6px)) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 6px)) saturate(1.3) !important;
+}
+
+[class*="modal_"][class*="root_"] {
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ── Modal Backdrop ── */
+[class*="backdrop_"] {
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* ── Emoji Picker / GIF Picker / Sticker Picker ── */
+[class*="emojiPicker_"],
+[class*="stickerPicker_"],
+[class*="contentWrapper_"][class*="picker_"],
+[class*="navList_"],
+[class*="categoryList_"] {
+  background: linear-gradient(
+    150deg,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.25)) 0%,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.18)) 100%
+  ) !important;
+  backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 8px)) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 8px)) saturate(1.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 12px !important;
+}
+
+/* ── Autocomplete / Mentions dropdown ── */
+[class*="autocomplete_"] {
+  background: linear-gradient(
+    160deg,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.3)) 0%,
+    rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.2)) 100%
+  ) !important;
+  backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 10px)) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glassy-blur, 15px) + 10px)) saturate(1.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+[class*="autocomplete_"] [class*="selected_"] {
+  background: rgba(var(--glassy-accent, 198, 120, 245), 0.15) !important;
+}
+
+/* ── Tooltips ── */
+[class*="tooltip_"] {
+  background: rgba(var(--glassy-bg-rgb, 15, 15, 20), 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ── Search Bar / Results ── */
+[class*="searchBar_"],
+[class*="searchResult_"],
+[class*="searchResultsWrap_"] {
+  background: rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.15)) !important;
+  backdrop-filter: blur(var(--glassy-blur, 15px)) !important;
+  -webkit-backdrop-filter: blur(var(--glassy-blur, 15px)) !important;
+}
+
+/* ── Thread / Forum Panels ── */
+[class*="container_"][class*="thread_"],
+[class*="chatLayerWrapper_"] {
+  background: rgba(var(--glassy-bg-chat-rgb, 10, 10, 12), calc(var(--glassy-opacity, 0.45) + 0.1)) !important;
+  backdrop-filter: blur(var(--glassy-blur, 15px)) !important;
+  -webkit-backdrop-filter: blur(var(--glassy-blur, 15px)) !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ── Role / Reaction Tooltips ── */
+[class*="reactionTooltip_"],
+[class*="rolesList_"] {
+  background: rgba(var(--glassy-bg-rgb, 15, 15, 20), 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* ── Notice Bar (top bar notifications) ── */
+[class*="notice_"][class*="colorDefault_"],
+[class*="notice_"] {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--glassy-accent, 198, 120, 245), 0.3) 0%,
+    rgba(var(--glassy-accent, 198, 120, 245), 0.15) 100%
+  ) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(var(--glassy-accent, 198, 120, 245), 0.2) !important;
+}
+
+/* ── Message Action Bar (hover buttons on messages) ── */
+[class*="buttons_"][class*="wrapper_"],
+[class*="buttonContainer_"][class*="message_"] {
+  background: rgba(var(--glassy-bg-rgb, 15, 15, 20), 0.7) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+}
+
+/* ── Server Boost / Nitro banners ── */
+[class*="perksModal_"],
+[class*="tierCard_"],
+[class*="upsellContainer_"] {
+  background: rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.2)) !important;
+  backdrop-filter: blur(var(--glassy-blur, 15px)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 12px !important;
+}
+
+/* ── Scrollbar Styling ── */
+::-webkit-scrollbar {
+  width: 6px !important;
+}
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--glassy-accent, 198, 120, 245), 0.25) !important;
+  border-radius: 6px !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--glassy-accent, 198, 120, 245), 0.45) !important;
+}
+
+/* ── Premium Accent Glow on Links & Mentions ── */
+a,
+[class*="mention_"],
+[class*="wrapper_"][class*="mention_"] {
+  color: rgb(var(--glassy-accent, 198, 120, 245)) !important;
+  text-shadow: 0 0 6px rgba(var(--glassy-accent, 198, 120, 245), 0.3);
+}
+
+[class*="mention_"]:hover {
+  background: rgba(var(--glassy-accent, 198, 120, 245), 0.15) !important;
+  text-shadow: 0 0 12px rgba(var(--glassy-accent, 198, 120, 245), 0.5);
+}
+
+/* ── Code Blocks with Glass ── */
+code, [class*="markup_"] pre {
+  background: rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+}
+
+/* ── Embed Cards ── */
+[class*="embedWrapper_"] {
+  background: rgba(var(--glassy-bg-rgb, 15, 15, 20), calc(var(--glassy-opacity, 0.45) + 0.1)) !important;
+  border-left: 3px solid rgba(var(--glassy-accent, 198, 120, 245), 0.5) !important;
+  border-radius: 8px !important;
+}
+
+/* ── Buttons (Brand Experiment) ── */
+[class*="button_"][class*="lookFilled_"][class*="colorBrand_"],
+[class*="button_"][class*="lookFilled_"][class*="colorGreen_"] {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--glassy-accent, 198, 120, 245), 0.8) 0%,
+    rgba(var(--glassy-accent, 198, 120, 245), 0.6) 100%
+  ) !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(var(--glassy-accent, 198, 120, 245), 0.3) !important;
+  transition: all 0.25s ease !important;
+}
+
+[class*="button_"][class*="lookFilled_"][class*="colorBrand_"]:hover {
+  box-shadow: 0 6px 25px rgba(var(--glassy-accent, 198, 120, 245), 0.5) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Server Settings Categories ── */
+[class*="categoryItem_"],
+[class*="settingItem_"] {
+  border-radius: 8px !important;
+  transition: background 0.2s ease !important;
+}
+
+[class*="categoryItem_"]:hover,
+[class*="settingItem_"]:hover {
+  background: rgba(var(--glassy-accent, 198, 120, 245), 0.08) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MICRO-ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Smooth panel transitions */
+[class*="sidebar_"],
+[class*="chatContent_"],
+[class*="membersWrap_"],
+[class*="panels_"] {
+  transition: background 0.4s ease, backdrop-filter 0.4s ease !important;
+}
+
+/* Channel hover micro-shift */
+[class*="link_"][class*="channel_"]:hover {
+  transform: translateX(3px);
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TITLE BAR & WORDMARK OVERRIDE
+   Must come AFTER @import to override ClearVision's branding
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Opaque title bar */
+[class*="typeWindows_"] {
+  background: #000000 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Kill ClearVision's wordmark completely */
+[class*="wordmark_"] svg,
+[class*="wordmark_"] span:not(.glassy-wordmark-brand):not(.glassy-wordmark-author),
+[class*="wordmark_"] a {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+[class*="wordmark_"]::before {
+  content: "" !important;
+  display: none !important;
+}
+
+[class*="wordmark_"]::after {
+  content: "GlassyWalls by xashu/Dev" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 8px !important;
+  transform: translateY(-50%) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', 'Segoe UI', sans-serif !important;
+  background: linear-gradient(135deg, #fff 20%, rgb(var(--glassy-accent, 198, 120, 245)) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  display: block !important;
+  visibility: visible !important;
+}
