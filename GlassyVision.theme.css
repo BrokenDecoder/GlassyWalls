@@ -9,8 +9,8 @@
 /* ═══════════════════════════════════════════════════════════════
    IMPORT: ClearVision V7 base (layout + structure only)
    ═══════════════════════════════════════════════════════════════ */
-@import url("https://clearvision.github.io/ClearVision-v7/main.css");
-@import url("https://clearvision.github.io/ClearVision-v7/betterdiscord.css");
+@import url("https://raw.githubusercontent.com/BrokenDecoder/GlassyWalls/main/cv_main.css");
+@import url("https://raw.githubusercontent.com/BrokenDecoder/GlassyWalls/main/cv_bd.css");
 
 /* ═══════════════════════════════════════════════════════════════
    CORE: Wire ClearVision variables → GlassyWalls dynamic system
