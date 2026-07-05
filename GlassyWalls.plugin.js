@@ -1,15 +1,15 @@
 /**
  * @name GlassyWalls
  * @author NetherDevs
- * @authorId 
- * @version 1.2.0
+ * @authorId 1343941782173388831
+ * @version 1.3.0
  * @description A premium BetterDiscord plugin that applies a stunning glassmorphism theme to Discord, scrapes 4kwallpapers.com in real-time to load beautiful backgrounds with a smooth cross-fade, and automatically adjusts theme colors to match the image.
- * @invite 
- * @donate 
- * @patreon 
- * @website 
+ * @invite soon
+ * @donate soon
+ * @patreon soon
+ * @website soon
  * @source https://github.com/BrokenDecoder/GlassyWalls
- * @updateUrl 
+ * @updateUrl https://raw.githubusercontent.com/BrokenDecoder/GlassyWalls/main/GlassyWalls.plugin.js
  */
 
 const { DOM, UI, Data, Net } = BdApi;
@@ -268,7 +268,8 @@ const THEME_CSS = `
     background-position: center;
     z-index: -100;
     pointer-events: none;
-    transition: opacity 0.8s ease-in-out;
+    transition: opacity 0.8s ease-in-out, transform 0.15s ease-out;
+    transform: none;
 }
 
 /* Noise texture overlay */
@@ -552,6 +553,11 @@ html.glassy-performance-mode [class*="callContainer_"] {
     text-transform: uppercase;
 }
 
+.glassy-title-actions {
+    display: flex;
+    gap: 6px;
+}
+
 .glassy-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -567,6 +573,33 @@ html.glassy-performance-mode [class*="callContainer_"] {
 .glassy-grid::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.1);
     border-radius: 4px;
+}
+
+.glassy-search-container {
+    margin-bottom: 10px;
+}
+.glassy-search-input {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: white;
+    font-size: 11px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+.glassy-search-input:focus {
+    border-color: rgb(var(--glassy-accent)) !important;
+    box-shadow: 0 0 8px rgba(var(--glassy-accent), 0.3);
+}
+.glassy-grid-empty {
+    grid-column: span 2;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    padding: 24px 0;
 }
 
 .glassy-card {
@@ -694,7 +727,7 @@ html.glassy-performance-mode [class*="callContainer_"] {
     box-shadow: 0 0 8px rgba(var(--glassy-accent), 0.3);
 }
 
-.glassy-preset-add-btn {
+.glassy-preset-add-btn, .glassy-upload-btn {
     background: rgba(var(--glassy-accent), 0.2);
     border: 1px solid rgba(var(--glassy-accent), 0.4);
     color: white;
@@ -710,9 +743,13 @@ html.glassy-performance-mode [class*="callContainer_"] {
     transition: all 0.2s ease;
     flex-shrink: 0;
 }
-.glassy-preset-add-btn:hover {
+.glassy-preset-add-btn:hover, .glassy-upload-btn:hover {
     background: rgba(var(--glassy-accent), 0.4);
     box-shadow: 0 0 10px rgba(var(--glassy-accent), 0.5);
+}
+.glassy-upload-btn svg {
+    width: 15px;
+    height: 15px;
 }
 
 /* Checkbox and dropdown styles */
@@ -819,6 +856,20 @@ input:checked + .glassy-switch-slider:before {
     border-color: rgba(var(--glassy-accent), 0.4);
     color: white;
 }
+.glassy-btn.glassy-btn-danger:hover {
+    background: rgba(255, 70, 70, 0.25);
+    border-color: rgba(255, 70, 70, 0.5);
+}
+.glassy-footer-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.glassy-footer-actions .glassy-btn {
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+}
 
 /* Spinner Animation */
 .glassy-loading-spinner {
@@ -893,6 +944,9 @@ module.exports = class GlassyWalls {
         this.scrapedWallpapersList = [];
         this.activeFeedType = "images";
         this.rotateIntervalId = null;
+        this.searchQuery = "";
+        this.keydownHandler = null;
+        this.parallaxHandler = null;
         
         // Default saved configurations
         this.settings = {
@@ -908,7 +962,11 @@ module.exports = class GlassyWalls {
             rotateInterval: 3600000, // 1 hour in ms
             performanceMode: false,
             manualAccent: "",
-            myPresets: []
+            myPresets: [],
+
+            // Parallax mouse-tilt effect
+            parallaxEnabled: false,
+            parallaxStrength: 20
         };
     }
 
@@ -927,6 +985,8 @@ module.exports = class GlassyWalls {
         this.initNoiseOverlay();
         this.initSwitcherUI();
         this.initWordmarkOverride();
+        this.initKeyboardShortcut();
+        this.initParallax();
 
         // Apply selected config on start
         this.applySelectedWallpaper();
@@ -961,6 +1021,16 @@ module.exports = class GlassyWalls {
         if (this.accountObserver) {
             this.accountObserver.disconnect();
             this.accountObserver = null;
+        }
+
+        // Remove global listeners
+        if (this.keydownHandler) {
+            document.removeEventListener("keydown", this.keydownHandler);
+            this.keydownHandler = null;
+        }
+        if (this.parallaxHandler) {
+            document.removeEventListener("mousemove", this.parallaxHandler);
+            this.parallaxHandler = null;
         }
 
         // Remove DOM nodes
@@ -1052,6 +1122,40 @@ module.exports = class GlassyWalls {
         });
     }
 
+    // Global keyboard shortcut (Ctrl+Shift+G) to toggle the customizer menu
+    initKeyboardShortcut() {
+        this.keydownHandler = (e) => {
+            if (e.ctrlKey && e.shiftKey && (e.code === "KeyG" || e.key === "G" || e.key === "g")) {
+                e.preventDefault();
+                if (!this.switcherMenu) return;
+                const isActive = this.switcherMenu.classList.toggle("active");
+                if (isActive) this.loadWallpapersList();
+            }
+        };
+        document.addEventListener("keydown", this.keydownHandler);
+    }
+
+    // Subtle parallax tilt of the wallpaper based on cursor position
+    initParallax() {
+        this.parallaxHandler = (e) => {
+            if (!this.settings.parallaxEnabled) return;
+            const strength = this.settings.parallaxStrength || 20;
+            const xPercent = (e.clientX / window.innerWidth - 0.5) * 2;
+            const yPercent = (e.clientY / window.innerHeight - 0.5) * 2;
+            const xOffset = (xPercent * strength).toFixed(2);
+            const yOffset = (yPercent * strength).toFixed(2);
+            const transform = `translate(${xOffset}px, ${yOffset}px) scale(1.06)`;
+            if (this.bgLayer1) this.bgLayer1.style.transform = transform;
+            if (this.bgLayer2) this.bgLayer2.style.transform = transform;
+        };
+        document.addEventListener("mousemove", this.parallaxHandler);
+    }
+
+    resetParallaxTransform() {
+        if (this.bgLayer1) this.bgLayer1.style.transform = "none";
+        if (this.bgLayer2) this.bgLayer2.style.transform = "none";
+    }
+
     initBackgroundLayers() {
         this.bgLayer1 = document.createElement("div");
         this.bgLayer1.className = "glassy-wall-bg-1";
@@ -1077,7 +1181,7 @@ module.exports = class GlassyWalls {
         // Create switcher floating button
         this.switcherBtn = document.createElement("div");
         this.switcherBtn.className = "glassy-switcher-btn";
-        this.switcherBtn.title = "Customize Background & Theme";
+        this.switcherBtn.title = "Customize Background & Theme (Ctrl+Shift+G)";
         this.switcherBtn.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.03345 19.1749 5.0999 19.4318 5.03154 19.6738C4.85899 20.2847 4.75 20.9168 4.75 21.5C4.75 21.7761 4.97386 22 5.25 22H12Z" />
@@ -1114,19 +1218,36 @@ module.exports = class GlassyWalls {
                     </svg>
                     GlassyWalls
                 </span>
-                <button id="glassy-refresh-feed-btn" class="glassy-btn" style="padding: 4px 8px; font-size: 10px; display: flex; align-items: center; gap: 4px;" title="Fetch new wallpapers">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="23 4 23 10 17 10"></polyline>
-                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                    </svg>
-                    Refresh
-                </button>
+                <span class="glassy-title-actions">
+                    <button id="glassy-shuffle-btn" class="glassy-btn" style="padding: 4px 8px; font-size: 10px; display: flex; align-items: center; gap: 4px;" title="Jump to a random wallpaper">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"></polyline>
+                            <line x1="4" y1="20" x2="21" y2="3"></line>
+                            <polyline points="21 16 21 21 16 21"></polyline>
+                            <line x1="15" y1="15" x2="21" y2="21"></line>
+                            <line x1="4" y1="4" x2="9" y2="9"></line>
+                        </svg>
+                        Shuffle
+                    </button>
+                    <button id="glassy-refresh-feed-btn" class="glassy-btn" style="padding: 4px 8px; font-size: 10px; display: flex; align-items: center; gap: 4px;" title="Fetch new wallpapers">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </span>
             </div>
             <div class="glassy-menu-subtitle">Theme Customizer</div>
             
             <div class="glassy-tabs-container">
                 <div class="glassy-tab active" data-tab="images">Images</div>
                 <div class="glassy-tab" data-tab="videos">Videos</div>
+            </div>
+
+            <!-- Search / Filter -->
+            <div class="glassy-search-container">
+                <input class="glassy-search-input" id="glassy-search-input" type="text" placeholder="Search wallpapers by name...">
             </div>
             
             <!-- Grid Container -->
@@ -1143,7 +1264,14 @@ module.exports = class GlassyWalls {
             <div class="glassy-control-group">
                 <div class="glassy-control-label">Custom Image URL</div>
                 <div class="glassy-input-url-container">
-                    <input class="glassy-input-url" id="glassy-custom-url" type="text" placeholder="Paste Unsplash or direct image URL..." value="${this.settings.customUrl || ''}">
+                    <input class="glassy-input-url" id="glassy-custom-url" type="text" placeholder="Paste Unsplash or direct image URL..." value="${this.settings.customUrl && !this.settings.customUrl.startsWith('data:') ? this.settings.customUrl : ''}">
+                    <button class="glassy-upload-btn" id="glassy-upload-btn" title="Upload an image/video from your device">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </button>
                     <button class="glassy-preset-add-btn" id="glassy-add-preset-btn" title="Save current setup as preset">+</button>
                 </div>
             </div>
@@ -1212,6 +1340,33 @@ module.exports = class GlassyWalls {
                     <span class="glassy-switch-slider"></span>
                 </label>
             </div>
+
+            <!-- Parallax Tilt Effect -->
+            <div class="glassy-switch-container">
+                <span class="glassy-control-label" style="margin-bottom:0; flex-direction:column; align-items:flex-start;">
+                    <span>Parallax Tilt Effect</span>
+                    <span style="font-size:9px; color:rgba(255,255,255,0.3); font-weight:normal;">Wallpaper subtly follows your cursor</span>
+                </span>
+                <label class="glassy-switch">
+                    <input type="checkbox" id="glassy-parallax-mode" ${this.settings.parallaxEnabled ? 'checked' : ''}>
+                    <span class="glassy-switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="glassy-control-group" id="glassy-parallax-strength-group" style="${this.settings.parallaxEnabled ? '' : 'display: none;'}">
+                <div class="glassy-control-label">
+                    <span>Parallax Strength</span>
+                    <span id="glassy-parallax-value">${this.settings.parallaxStrength}px</span>
+                </div>
+                <input class="glassy-slider" id="glassy-parallax-slider" type="range" min="2" max="40" value="${this.settings.parallaxStrength}">
+            </div>
+
+            <!-- Footer Actions: Export / Import / Reset -->
+            <div class="glassy-control-group glassy-footer-actions">
+                <button class="glassy-btn" id="glassy-export-btn" title="Save your settings to a JSON file">Export</button>
+                <button class="glassy-btn" id="glassy-import-btn" title="Load settings from a JSON file">Import</button>
+                <button class="glassy-btn glassy-btn-danger" id="glassy-reset-btn" title="Reset everything to defaults">Reset</button>
+            </div>
         `;
         document.body.appendChild(this.switcherMenu);
 
@@ -1242,6 +1397,14 @@ module.exports = class GlassyWalls {
             });
         }
 
+        const shuffleBtn = this.switcherMenu.querySelector("#glassy-shuffle-btn");
+        if (shuffleBtn) {
+            shuffleBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.shuffleWallpaper();
+            });
+        }
+
         const tabs = this.switcherMenu.querySelectorAll(".glassy-tab");
         tabs.forEach(tab => {
             tab.addEventListener("click", async (e) => {
@@ -1252,9 +1415,18 @@ module.exports = class GlassyWalls {
                 tab.classList.add("active");
                 
                 this.activeFeedType = tab.getAttribute("data-tab");
+                this.wallpapersLoaded = false;
                 await this.loadWallpapersList();
             });
         });
+
+        // Setup Search Filter
+        const searchInput = this.switcherMenu.querySelector("#glassy-search-input");
+        searchInput.addEventListener("input", (e) => {
+            this.searchQuery = e.target.value || "";
+            this.renderWallpaperGrid(this._currentList || [], this._currentIsLive || false);
+        });
+        searchInput.addEventListener("click", (e) => e.stopPropagation());
 
         // Setup Opacity Slider
         const opacitySlider = this.switcherMenu.querySelector("#glassy-opacity-slider");
@@ -1320,7 +1492,7 @@ module.exports = class GlassyWalls {
         const addPresetBtn = this.switcherMenu.querySelector("#glassy-add-preset-btn");
         const customUrlInput = this.switcherMenu.querySelector("#glassy-custom-url");
         addPresetBtn.addEventListener("click", () => {
-            const url = customUrlInput.value.trim();
+            const url = customUrlInput.value.trim() || this.settings.customUrl;
             if (url) {
                 this.saveCurrentSetupAsPreset(url);
             } else {
@@ -1340,6 +1512,13 @@ module.exports = class GlassyWalls {
                     this.extractColorAndApply(url);
                 }
             }
+        });
+
+        // Setup Upload From Device Button
+        const uploadBtn = this.switcherMenu.querySelector("#glassy-upload-btn");
+        uploadBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.triggerLocalUpload();
         });
 
         // Setup Auto-Rotate Checkbox
@@ -1371,6 +1550,45 @@ module.exports = class GlassyWalls {
             blurGroup.style.display = checked ? "none" : "";
             this.saveSettings();
             this.updatePerformanceModeClass();
+        });
+
+        // Setup Parallax Toggle & Strength Slider
+        const parallaxCheckbox = this.switcherMenu.querySelector("#glassy-parallax-mode");
+        const parallaxStrengthGroup = this.switcherMenu.querySelector("#glassy-parallax-strength-group");
+        parallaxCheckbox.addEventListener("change", (e) => {
+            const checked = e.target.checked;
+            this.settings.parallaxEnabled = checked;
+            parallaxStrengthGroup.style.display = checked ? "" : "none";
+            this.saveSettings();
+            if (!checked) this.resetParallaxTransform();
+        });
+
+        const parallaxSlider = this.switcherMenu.querySelector("#glassy-parallax-slider");
+        const parallaxValueLabel = this.switcherMenu.querySelector("#glassy-parallax-value");
+        parallaxSlider.addEventListener("input", (e) => {
+            const val = parseInt(e.target.value);
+            parallaxValueLabel.textContent = `${val}px`;
+            this.settings.parallaxStrength = val;
+            this.saveSettings();
+        });
+
+        // Setup Footer Actions
+        const exportBtn = this.switcherMenu.querySelector("#glassy-export-btn");
+        exportBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.exportSettings();
+        });
+
+        const importBtn = this.switcherMenu.querySelector("#glassy-import-btn");
+        importBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.triggerImport();
+        });
+
+        const resetBtn = this.switcherMenu.querySelector("#glassy-reset-btn");
+        resetBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.resetAllSettings();
         });
     }
 
@@ -1492,6 +1710,50 @@ module.exports = class GlassyWalls {
         }
 
         this.updateActiveCardInUI();
+    }
+
+    // Jumps straight to a random wallpaper from presets + the current feed/curated list
+    shuffleWallpaper() {
+        let list = this.scrapedWallpapersList.length > 0 ? this.scrapedWallpapersList : WALLPAPERS;
+
+        if (this.settings.myPresets && this.settings.myPresets.length > 0) {
+            list = [...this.settings.myPresets, ...list];
+        }
+
+        if (list.length === 0) return;
+
+        const randIdx = Math.floor(Math.random() * list.length);
+        const wp = list[randIdx];
+
+        if (wp.isPreset) {
+            this.settings.customUrl = wp.url;
+            this.settings.customColors = wp.colors;
+            this.settings.activeWallpaper = -1;
+            this.saveSettings();
+            this.applySelectedWallpaper();
+        } else if (wp.thumbUrl) {
+            // Live scraped wallpaper (Wallhaven/Picsum/MotionBGs)
+            this.settings.customUrl = wp.url;
+            this.settings.activeWallpaper = -1;
+            this.saveSettings();
+            if (wp.colors) {
+                this.settings.customColors = wp.colors;
+                this.applySelectedWallpaper();
+            } else {
+                this.settings.customColors = null;
+                this.extractColorAndApply(wp.url);
+            }
+        } else {
+            // Curated offline wallpaper
+            this.settings.customUrl = "";
+            this.settings.customColors = null;
+            this.settings.activeWallpaper = randIdx;
+            this.saveSettings();
+            this.applySelectedWallpaper();
+        }
+
+        this.updateActiveCardInUI();
+        UI.showToast("Shuffled to a new wallpaper!", {type: "info"});
     }
 
     updateActiveCardInUI() {
@@ -1718,7 +1980,10 @@ module.exports = class GlassyWalls {
         const container = this.switcherMenu?.querySelector("#glassy-grid-container");
         if (!container) return;
         
-        if (this.wallpapersLoaded && !forceRefresh) return;
+        if (this.wallpapersLoaded && !forceRefresh) {
+            this.renderWallpaperGrid(this._currentList || [], this._currentIsLive || false);
+            return;
+        }
 
         container.innerHTML = `
             <div class="glassy-loading-spinner">
@@ -1739,31 +2004,49 @@ module.exports = class GlassyWalls {
             this.wallpapersLoaded = true;
         }
 
-        // Render HTML
+        this._currentList = list;
+        this._currentIsLive = isLive;
+
+        this.renderWallpaperGrid(list, isLive);
+    }
+
+    // Renders the wallpaper grid (presets + list) applying the current search filter.
+    // Kept separate from loadWallpapersList so search input can re-render without refetching.
+    renderWallpaperGrid(list, isLive) {
+        const container = this.switcherMenu?.querySelector("#glassy-grid-container");
+        if (!container) return;
+
+        const query = (this.searchQuery || "").trim().toLowerCase();
+
+        const allPresets = this.settings.myPresets || [];
+        const presetsWithIdx = allPresets.map((p, i) => Object.assign({}, p, { __idx: i }));
+        const filteredPresets = query ? presetsWithIdx.filter(p => p.name.toLowerCase().includes(query)) : presetsWithIdx;
+
+        const listWithIdx = (list || []).map((wp, i) => Object.assign({}, wp, { __idx: i }));
+        const filteredList = query ? listWithIdx.filter(wp => wp.name.toLowerCase().includes(query)) : listWithIdx;
+
         let htmlContent = "";
 
-        // First render user presets if any exist
-        if (this.settings.myPresets && this.settings.myPresets.length > 0) {
-            htmlContent += this.settings.myPresets.map((preset, index) => {
-                const isActive = this.settings.customUrl === preset.url;
-                const isVideo = preset.url.match(/\.(mp4|webm|ogg)(\?.*)?$/i);
-                const mediaElement = isVideo 
-                    ? `<video class="glassy-card-img" src="${escapeHTML(preset.url)}" autoplay loop muted playsinline></video>` 
-                    : `<img class="glassy-card-img" src="${escapeHTML(preset.url)}" alt="${escapeHTML(preset.name)}">`;
-                
-                return `
-                    <div class="glassy-card glassy-preset-card ${isActive ? 'active' : ''}" data-preset-idx="${index}">
-                        ${mediaElement}
-                        <div class="glassy-card-label">${escapeHTML(preset.name)}</div>
-                        <div class="glassy-card-delete" data-preset-idx="${index}">&times;</div>
-                    </div>
-                `;
-            }).join("");
-        }
+        // Render user presets first
+        htmlContent += filteredPresets.map((preset) => {
+            const isActive = this.settings.customUrl === preset.url;
+            const isVideo = preset.url.match(/\.(mp4|webm|ogg)(\?.*)?$/i);
+            const mediaElement = isVideo
+                ? `<video class="glassy-card-img" src="${escapeHTML(preset.url)}" autoplay loop muted playsinline></video>`
+                : `<img class="glassy-card-img" src="${escapeHTML(preset.url)}" alt="${escapeHTML(preset.name)}">`;
+
+            return `
+                <div class="glassy-card glassy-preset-card ${isActive ? 'active' : ''}" data-preset-idx="${preset.__idx}">
+                    ${mediaElement}
+                    <div class="glassy-card-label">${escapeHTML(preset.name)}</div>
+                    <div class="glassy-card-delete" data-preset-idx="${preset.__idx}">&times;</div>
+                </div>
+            `;
+        }).join("");
 
         // Next render default/scraped list
-        htmlContent += list.map((wp, index) => {
-            const isActive = (!isLive && this.settings.activeWallpaper === index) || 
+        htmlContent += filteredList.map((wp) => {
+            const isActive = (!isLive && this.settings.activeWallpaper === wp.__idx) ||
                              (isLive && this.settings.customUrl === wp.url);
             const mediaUrl = isLive ? wp.thumbUrl : wp.url;
             const isVideo = mediaUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i);
@@ -1772,12 +2055,16 @@ module.exports = class GlassyWalls {
                 : `<img class="glassy-card-img" src="${escapeHTML(mediaUrl)}" alt="${escapeHTML(wp.name)}">`;
 
             return `
-                <div class="glassy-card ${isActive ? 'active' : ''}" data-index="${index}" data-live="${isLive}">
+                <div class="glassy-card" data-index="${wp.__idx}" data-live="${isLive}">
                     ${mediaElement}
                     <div class="glassy-card-label">${escapeHTML(wp.name)}</div>
                 </div>
             `;
         }).join("");
+
+        if (!htmlContent) {
+            htmlContent = `<div class="glassy-grid-empty">No wallpapers match "${escapeHTML(this.searchQuery)}"</div>`;
+        }
 
         container.innerHTML = htmlContent;
 
@@ -1808,11 +2095,11 @@ module.exports = class GlassyWalls {
 
                 cards.forEach(c => c.classList.remove("active"));
                 card.classList.add("active");
-                
+
                 if (card.classList.contains("glassy-preset-card")) {
                     const presetIdx = parseInt(card.getAttribute("data-preset-idx"));
                     const preset = this.settings.myPresets[presetIdx];
-                    
+
                     this.settings.customUrl = preset.url;
                     this.settings.customColors = preset.colors;
                     this.settings.activeWallpaper = -1;
@@ -1821,7 +2108,7 @@ module.exports = class GlassyWalls {
                 } else {
                     const idx = parseInt(card.getAttribute("data-index"));
                     const live = card.getAttribute("data-live") === "true";
-                    const wp = list[idx];
+                    const wp = (this._currentList || list)[idx];
 
                     if (live) {
                         this.settings.customUrl = wp.url;
@@ -1844,6 +2131,148 @@ module.exports = class GlassyWalls {
                 }
             });
         });
+    }
+
+    // Opens a native file picker so the user can use a local image/video as wallpaper
+    triggerLocalUpload() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*,video/mp4,video/webm,video/ogg";
+        input.style.display = "none";
+
+        input.addEventListener("change", (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            const MAX_SIZE = 8 * 1024 * 1024; // 8MB soft cap
+            if (file.size > MAX_SIZE) {
+                UI.showToast("That file is large and may slow Discord down. Loading anyway...", {type: "warning"});
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const dataUrl = reader.result;
+                this.settings.customUrl = dataUrl;
+                this.settings.activeWallpaper = -1;
+                this.settings.customColors = null;
+                this.saveSettings();
+
+                UI.showToast("Loading uploaded wallpaper...", {type: "info"});
+                this.extractColorAndApply(dataUrl);
+
+                const urlInput = this.switcherMenu?.querySelector("#glassy-custom-url");
+                if (urlInput) urlInput.value = `(uploaded: ${file.name})`;
+            };
+            reader.onerror = () => {
+                UI.showToast("Failed to read the selected file.", {type: "error"});
+            };
+            reader.readAsDataURL(file);
+        });
+
+        document.body.appendChild(input);
+        input.click();
+        input.remove();
+    }
+
+    // Downloads the current settings (presets, colors, sliders, etc.) as a JSON backup file
+    exportSettings() {
+        try {
+            const dataStr = JSON.stringify(this.settings, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `glassywalls-settings-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            UI.showToast("Settings exported!", {type: "success"});
+        } catch (e) {
+            console.error("[GlassyWalls] Export failed:", e);
+            UI.showToast("Failed to export settings.", {type: "error"});
+        }
+    }
+
+    // Opens a file picker to restore settings from a previously exported JSON backup
+    triggerImport() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "application/json,.json";
+        input.style.display = "none";
+
+        input.addEventListener("change", (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const imported = JSON.parse(reader.result);
+                    this.settings = Object.assign({}, this.settings, imported);
+                    this.saveSettings();
+                    UI.showToast("Settings imported! Reloading GlassyWalls...", {type: "success"});
+
+                    // Fully reinitialize so all UI, layers, and CSS vars reflect the import
+                    this.stop();
+                    this.start();
+                } catch (err) {
+                    console.error("[GlassyWalls] Import failed:", err);
+                    UI.showToast("That file isn't a valid GlassyWalls settings export.", {type: "error"});
+                }
+            };
+            reader.onerror = () => {
+                UI.showToast("Failed to read the selected file.", {type: "error"});
+            };
+            reader.readAsText(file);
+        });
+
+        document.body.appendChild(input);
+        input.click();
+        input.remove();
+    }
+
+    // Wipes all customization back to plugin defaults, after user confirmation
+    resetAllSettings() {
+        const defaults = {
+            activeWallpaper: 0,
+            blurStrength: 15,
+            customUrl: "",
+            customColors: null,
+            glassOpacity: 0.45,
+            textureIntensity: 0.04,
+            autoRotate: false,
+            rotateInterval: 3600000,
+            performanceMode: false,
+            manualAccent: "",
+            myPresets: [],
+            parallaxEnabled: false,
+            parallaxStrength: 20
+        };
+
+        const doReset = () => {
+            this.settings = defaults;
+            this.saveSettings();
+            UI.showToast("GlassyWalls reset to defaults.", {type: "success"});
+            this.stop();
+            this.start();
+        };
+
+        if (UI && typeof UI.showConfirmationModal === "function") {
+            UI.showConfirmationModal(
+                "Reset GlassyWalls",
+                "This will remove all your presets, uploaded wallpapers, and customization settings. This cannot be undone.",
+                {
+                    confirmText: "Reset Everything",
+                    cancelText: "Cancel",
+                    danger: true,
+                    onConfirm: doReset
+                }
+            );
+        } else {
+            // Fallback if UI.showConfirmationModal isn't available in this BD version
+            doReset();
+        }
     }
 
     ensureValidColors(colors) {
@@ -1963,7 +2392,12 @@ module.exports = class GlassyWalls {
                 fadeLayer();
             };
             img.onerror = () => {
-                // If direct URL fails, try proxying through weserv
+                // If direct URL fails, try proxying through weserv (skip for data URLs)
+                if (imageUrl.startsWith("data:")) {
+                    UI.showToast("Failed to load uploaded wallpaper.", {type: "error"});
+                    fadeLayer();
+                    return;
+                }
                 const proxied = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=1920&q=85`;
                 console.warn("[GlassyWalls] Direct image load failed, trying proxy:", imageUrl);
                 inactiveLayer.style.backgroundImage = `url("${proxied}")`;
@@ -2075,6 +2509,7 @@ module.exports = class GlassyWalls {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
                 // Route images through weserv.nl to allow CORS-exempt pixel analysis in canvas
+                // (skip the proxy for local data: URLs, which are already same-origin/safe to read)
                 img.src = url.startsWith("data:") ? url : `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=150`;
                 
                 img.onload = () => extractFromSource(img);
